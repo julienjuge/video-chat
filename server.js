@@ -16,7 +16,7 @@ var cors = require("cors");
 
 const handle = app.getRequestHandler();
 
-let nbReady = 0;
+const PORT = process.env.PORT || 5000;
 let nbSession = 0;
 
 io.on("connection", function(socket) {
@@ -60,7 +60,7 @@ app.prepare().then(() => {
 
   server.use(cors());
 
-  http.listen(process.env.PORT, "localhost", () => {
-    console.log(`listening on port ${process.env.PORT}`);
+  http.listen(PORT, "localhost", () => {
+    console.log(`listening on port ${PORT}`);
   });
 });
