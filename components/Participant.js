@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 import React, { useEffect, useRef, useState } from "react";
 
-import { Button } from "antd";
+import { Button, Row, Col } from "antd";
 import { Rnd } from "react-rnd";
 
 const Participant = ({
@@ -80,7 +80,7 @@ const Participant = ({
             onClick={e => {
               enableVideo();
             }}
-            style={{ position: "relative", color: "red" }}
+            style={{ position: "relative", backgroundColor: "red" }}
             type="primary"
             shape="circle"
             icon={<VideoCameraOutlined />}
@@ -90,58 +90,22 @@ const Participant = ({
     }
     return <div></div>;
   };
-  if (isLocal) {
-    return (
-      <Rnd
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          border: "solid 1px #ddd",
-          background: "#f0f0f0"
-        }}
-        size={{ width: widthLocal, height: heightLocal }}
-        position={{ x: xLocal, y: yLocal }}
-        onDragStop={(e, d) => {
-          setXLocal(d.x);
-          setYLocal(d.y);
-        }}
-        onResizeStop={(e, direction, ref, delta, position) => {
-          setWidthLocal(ref.offsetWidth);
-          setHeighLocal(ref.offsetHeight);
-        }}
-      >
-        <div
-          className="participant"
-          style={{ marginRight: 0, width: "99%", height: "99%" }}
-        >
-          <h3>
-            {name}
-            {isLocal ? " (moi)" : ""}
-          </h3>
-          {video}
-
-          {getAudioButtons()}
-          {getVideoButtons()}
-        </div>
-      </Rnd>
-    );
-  } else {
-    return (
-      <div
-        className="participant"
-        style={isLocal ? { width: "100%" } : { width: "30%" }}
-      >
-        <h3>
-          {name}
-          {isLocal ? "(moi)" : ""}
-        </h3>
-        {video}
-        {getAudioButtons()}
-        {getVideoButtons()}
-      </div>
-    );
-  }
+  return (
+    <div className="participant" style={{ width: "100%", height: "300px" }}>
+      <h3>
+        {name}
+        {isLocal ? "(moi)" : ""}
+      </h3>
+      {video}
+      {isLocal && (
+        <Row>
+          <Col span={12} />
+          <Col span={1}>{getVideoButtons()}</Col>
+          <Col span={10} />
+        </Row>
+      )}
+    </div>
+  );
 };
 
 export default Participant;

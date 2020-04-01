@@ -1,5 +1,8 @@
+import { Avatar, Button, Drawer, Row, Col, Spin } from "antd";
+
 import Participant from "./Participant";
 import React from "react";
+import { UserOutlined } from "@ant-design/icons";
 import VideoCall from "../helpers/simple-peer";
 import create from "@ant-design/icons/lib/components/IconFont";
 import { getDisplayStream } from "../helpers/media-access";
@@ -27,29 +30,54 @@ class Room extends React.Component {
       stream1: React.createRef(),
       stream2: React.createRef(),
       stream3: React.createRef(),
-      stream4: React.createRef()
+      stream4: React.createRef(),
+      userList: [],
+      visible: false
     };
   }
   videoCall = new VideoCall();
+
+  showDrawer = () => {
+    this.setState({
+      visible: true
+    });
+  };
+
+  onClose = () => {
+    this.setState({
+      visible: false
+    });
+  };
+
   componentDidMount() {
     const socket = io(process.env.REACT_APP_SIGNALING_SERVER);
     const component = this;
     this.setState({ socket });
-    const { roomId } = this.props;
+    const { roomId, username } = this.props;
     this.getUserMedia().then(() => {
-      socket.emit("join", { roomId: roomId });
+      socket.emit("join", { roomId: roomId, username: username });
     });
     socket.on("init", () => {
       component.setState({ initiator: true });
     });
-    socket.on("ready", () => {
+    socket.on("ready", data => {
+      console.log(data.username);
       component.enter(roomId);
     });
     socket.on("desc", data => {
-      if (data.type === "offer" && component.state.initiator) return;
-      if (data.type === "answer" && !component.state.initiator) return;
+      const desc = data.desc;
+      let userList = this.state.userList;
+      if (!userList.includes(data.user)) {
+        let username = data.user;
+        if (data.user === this.props.username) username = data.user + "(moi)";
 
-      if (component.state.connecting) component.call(data);
+        userList.push(username);
+        this.setState({ userList: userList });
+      }
+      if (desc.type === "offer" && component.state.initiator) return;
+      if (desc.type === "answer" && !component.state.initiator) return;
+
+      if (component.state.connecting) component.call(desc);
     });
     socket.on("disconnected", () => {
       component.setState({ initiator: true });
@@ -106,6 +134,7 @@ class Room extends React.Component {
 
     peer.on("signal", data => {
       const signal = {
+        user: this.props.username,
         room: roomId,
         desc: data
       };
@@ -158,12 +187,9 @@ class Room extends React.Component {
     this.setState({ audioEnabled: bool });
   };
 
-  generateParticipants = () => {
-    const streams = [0, 1, 2, 3, 4];
-    console.log("génération des " + streams.length + " participants");
-
-    return streams.map((stream, index) => {
-      return (
+  generateParticipant = index => {
+    return (
+      <Col span={6}>
         <Participant
           key={index}
           isLocal={false}
@@ -177,8 +203,8 @@ class Room extends React.Component {
             </div>
           }
         />
-      );
-    });
+      </Col>
+    );
   };
 
   buildParticipants = () => {
@@ -201,47 +227,93 @@ class Room extends React.Component {
       waiting,
       localStream,
       audioEnabled,
-      videoEnabled
+      videoEnabled,
+      userList
     } = this.state;
     return (
       <div className="room">
-        <h2>Salle: {roomId}</h2>
-        {connecting && (
-          <div>
-            <p>Establishing connection...</p>
-          </div>
-        )}
-        {waiting && (
-          <div>
-            <p>Waiting for someone...</p>
-          </div>
-        )}
-        {this.generateParticipants()}
-        <div className="local-participant">
-          {localStream !== undefined ? (
-            <Participant
-              isLocal={true}
-              key={"fneoisfnoes"}
-              name={username}
-              video={
-                <div>
-                  <video
-                    autoPlay
-                    id="localVideo"
-                    ref={video => (this.localVideo = video)}
-                  />
-                </div>
-              }
-              setAudioEnabled={this.setAudioEnabled}
-              audioEnabled={audioEnabled}
-              disableVideo={this.disableVideo}
-              enableVideo={this.enableVideo}
-              videoEnabled={videoEnabled}
-            />
-          ) : (
-            ""
-          )}
-        </div>
+        <Row>
+          <Col span={11}>
+            {connecting && <Spin tip="Establishing connection..." />}
+            {waiting && <Spin tip="Waiting for someone..." />}
+          </Col>
+          <Col span={2}>
+            <h2>Salle: {roomId}</h2>
+          </Col>
+          <Col span={8} />
+          <Col span={3}>
+            <div>
+              <Button
+                type="primary"
+                disabled={userList.length === 0}
+                onClick={this.showDrawer}
+              >
+                Connected users ({userList.length})
+              </Button>
+              <Drawer
+                title={`Connected users (${userList.length})`}
+                width={200}
+                closable={false}
+                onClose={this.onClose}
+                visible={this.state.visible}
+              >
+                {userList.map(user => (
+                  <div>
+                    <Avatar
+                      style={{ backgroundColor: "#87d068" }}
+                      icon={<UserOutlined />}
+                    />
+                    {" " + user}
+                  </div>
+                ))}
+              </Drawer>
+            </div>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col span={1} />
+          {this.generateParticipant(0)}
+          <Col span={1} />
+          {this.generateParticipant(1)}
+          <Col span={1} />
+          {this.generateParticipant(2)}
+          <Col span={3} />
+        </Row>
+
+        <Row>
+          <Col span={1} />
+          {this.generateParticipant(3)}
+          <Col span={1} />
+          {this.generateParticipant(4)}
+          <Col span={1} />
+          <Col span={6}>
+            {localStream !== undefined ? (
+              <Participant
+                isLocal={true}
+                key={"fneoisfnoes"}
+                name={username}
+                video={
+                  <div>
+                    <video
+                      autoPlay
+                      id="localVideo"
+                      ref={video => (this.localVideo = video)}
+                    />
+                  </div>
+                }
+                setAudioEnabled={this.setAudioEnabled}
+                audioEnabled={audioEnabled}
+                disableVideo={this.disableVideo}
+                enableVideo={this.enableVideo}
+                videoEnabled={videoEnabled}
+              />
+            ) : (
+              ""
+            )}
+          </Col>
+          <Col span={3} />
+        </Row>
       </div>
     );
   }

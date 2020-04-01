@@ -27,6 +27,7 @@ let nbSession = 0;
 
 io.on("connection", function(socket) {
   socket.on("join", function(data) {
+    const username = data.username;
     socket.join(data.roomId);
     socket.room = data.roomId;
     const sockets = io.of("/").in().adapter.rooms[data.roomId];
@@ -38,7 +39,7 @@ io.on("connection", function(socket) {
       socket.emit("init");
     } else {
       if (sockets.length < 5) {
-        io.to(data.roomId).emit("ready");
+        io.to(data.roomId).emit("ready", { username: username });
       } else {
         console.log("full");
         socket.room = null;
@@ -48,7 +49,7 @@ io.on("connection", function(socket) {
     }
   });
   socket.on("signal", data => {
-    io.to(data.room).emit("desc", data.desc);
+    io.to(data.room).emit("desc", data);
   });
   socket.on("disconnect", () => {
     const roomId = Object.keys(socket.adapter.rooms)[0];
