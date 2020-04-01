@@ -21,12 +21,17 @@ class Room extends React.Component {
       waiting: true,
       peerIds: [],
       audioEnabled: false,
-      videoEnabled: true
+      videoEnabled: true,
+      streams: [],
+      stream0: React.createRef(),
+      stream1: React.createRef(),
+      stream2: React.createRef(),
+      stream3: React.createRef(),
+      stream4: React.createRef()
     };
   }
   videoCall = new VideoCall();
   componentDidMount() {
-    console.log(process.env.REACT_APP_SIGNALING_SERVER);
     const socket = io(process.env.REACT_APP_SIGNALING_SERVER);
     const component = this;
     this.setState({ socket });
@@ -38,24 +43,18 @@ class Room extends React.Component {
       component.setState({ initiator: true });
     });
     socket.on("ready", () => {
-      console.log("c'est ok on rentre dans " + roomId);
       component.enter(roomId);
     });
     socket.on("desc", data => {
-      console.log(data);
-      console.log(data.type === "offer" && component.state.initiator);
-      console.log(data.type === "answer" && !component.state.initiator);
       if (data.type === "offer" && component.state.initiator) return;
       if (data.type === "answer" && !component.state.initiator) return;
-      console.log("ok on appelle");
+
       if (component.state.connecting) component.call(data);
     });
     socket.on("disconnected", () => {
-      console.log("il est parti");
       component.setState({ initiator: true });
     });
     socket.on("full", () => {
-      console.log("c'est plein");
       component.setState({ full: true });
     });
   }
@@ -76,6 +75,8 @@ class Room extends React.Component {
         op,
         stream => {
           this.setState({ streamUrl: stream, localStream: stream });
+          console.log(stream);
+          this.localAudio.srcObject = stream;
           this.localVideo.srcObject = stream;
           resolve();
         },
@@ -97,7 +98,6 @@ class Room extends React.Component {
     });
   }
   enter = roomId => {
-    console.log("enter in " + roomId);
     this.setState({ connecting: true });
     const peer = this.videoCall.init(
       this.state.localStream,
@@ -107,7 +107,6 @@ class Room extends React.Component {
     this.state.peerIds.push(peer._id);
 
     peer.on("signal", data => {
-      console.log("signal peer");
       const signal = {
         room: roomId,
         desc: data
@@ -115,16 +114,21 @@ class Room extends React.Component {
       this.state.socket.emit("signal", signal);
     });
     peer.on("stream", stream => {
-      console.log("stream peer");
-      this.remoteVideo.srcObject = stream;
-      this.setState({ connecting: false, waiting: false });
+      let newStreams = this.state.streams;
+      if (this.state[`stream${newStreams.length}`].current !== null)
+        this.state[`stream${newStreams.length}`].current.srcObject = stream;
+      newStreams.push(stream);
+      this.setState({
+        connecting: false,
+        waiting: false,
+        streams: newStreams
+      });
     });
     peer.on("error", function(err) {
       console.log(err);
     });
   };
   call = otherId => {
-    console.log("callllllll");
     this.videoCall.connect(otherId);
   };
   renderFull = () => {
@@ -152,7 +156,43 @@ class Room extends React.Component {
   };
 
   setAudioEnabled = bool => {
+    console.log(bool);
     this.setState({ audioEnabled: bool });
+  };
+
+  generateParticipants = () => {
+    const streams = [0, 1, 2, 3, 4];
+    console.log("génération des " + streams.length + " participants");
+
+    return streams.map((stream, index) => {
+      return (
+        <Participant
+          key={index}
+          isLocal={false}
+          video={
+            <div>
+              <video
+                autoPlay
+                id={"stream" + index}
+                ref={this.state[`stream${index}`]}
+              />
+            </div>
+          }
+        />
+      );
+    });
+  };
+
+  buildParticipants = () => {
+    console.log("build");
+    const { streams } = this.state;
+    streams.map((stream, index) => {
+      console.log(stream);
+      console.log(this.state["stream" + index]);
+      if (this.state[`stream${index}`].current !== null)
+        this.state[`stream${index}`].current.srcObject = stream;
+      else this.buildParticipants();
+    });
   };
 
   render() {
@@ -178,20 +218,7 @@ class Room extends React.Component {
             <p>Waiting for someone...</p>
           </div>
         )}
-
-        <Participant
-          isLocal={false}
-          video={
-            <div>
-              <video
-                autoPlay
-                id="remoteVideo"
-                ref={video => (this.remoteVideo = video)}
-              />
-            </div>
-          }
-        />
-
+        {this.generateParticipants()}
         <div className="local-participant">
           {localStream !== undefined ? (
             <Participant
@@ -203,7 +230,6 @@ class Room extends React.Component {
                   <video
                     autoPlay
                     id="localVideo"
-                    muted
                     ref={video => (this.localVideo = video)}
                   />
                 </div>

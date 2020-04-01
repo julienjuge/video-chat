@@ -34,7 +34,6 @@ const Participant = ({
   }, [participant]);
 
   const getAudioButtons = () => {
-    console.log("audio buttons");
     if (isLocal === true) {
       if (audioEnabled) {
         return (
@@ -110,7 +109,6 @@ const Participant = ({
         onResizeStop={(e, direction, ref, delta, position) => {
           setWidthLocal(ref.offsetWidth);
           setHeighLocal(ref.offsetHeight);
-          console.log(position);
         }}
       >
         <div

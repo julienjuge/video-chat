@@ -3,7 +3,6 @@ import Peer from "simple-peer";
 export default class VideoCall {
   peer = null;
   init = (stream, initiator) => {
-    console.log("on instancie le peer avec initiator = " + initiator);
     this.peer = new Peer({
       initiator: initiator,
       stream: stream,
@@ -24,7 +23,6 @@ export default class VideoCall {
     return this.peer;
   };
   connect = otherId => {
-    console.log("connnnnnect");
     this.peer.signal(otherId);
   };
 }
