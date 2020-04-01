@@ -498,7 +498,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 const io = __webpack_require__(/*! socket.io-client */ "socket.io-client");
 
-const socket = io("http://localhost:3000");
+const socket = io("https://video-chat.julienjuge.now.sh");
 
 class Room extends react__WEBPACK_IMPORTED_MODULE_1___default.a.Component {
   constructor() {
@@ -592,6 +592,7 @@ class Room extends react__WEBPACK_IMPORTED_MODULE_1___default.a.Component {
   }
 
   componentDidMount() {
+    console.log(process.env.REACT_APP_SIGNALING_SERVER);
     const socket = io(process.env.REACT_APP_SIGNALING_SERVER);
     const component = this;
     this.setState({

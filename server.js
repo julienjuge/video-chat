@@ -17,6 +17,7 @@ var cors = require("cors");
 const handle = app.getRequestHandler();
 
 const PORT = process.env.PORT || 5000;
+const IS_CLEVER = process.env.IS_CLEVER;
 let nbSession = 0;
 
 io.on("connection", function(socket) {
@@ -60,7 +61,13 @@ app.prepare().then(() => {
 
   server.use(cors());
 
-  http.listen(PORT, "localhost", () => {
-    console.log(`listening on port ${PORT}`);
-  });
+  if (IS_CLEVER) {
+    http.listen(PORT, "0.0.0.0", () => {
+      console.log(`listening on port ${PORT}`);
+    });
+  } else {
+    http.listen(PORT, "localhost", () => {
+      console.log(`listening on port ${PORT}`);
+    });
+  }
 });
