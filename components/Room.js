@@ -134,18 +134,18 @@ class Room extends React.Component {
   };
 
   disableVideo = () => {
-    const videoTrack = localStream.getVideoTracks()[0];
+    const videoTrack = this.state.localStream.getVideoTracks()[0];
 
-    if (localStream) {
+    if (videoTrack) {
       videoTrack.enabled = false;
       this.setState({ videoEnabled: false });
     }
   };
 
   enableVideo = () => {
-    const videoTrack = localStream.getVideoTracks()[0];
+    const videoTrack = this.state.localStream.getVideoTracks()[0];
 
-    if (localStream) {
+    if (videoTrack) {
       videoTrack.enabled = true;
       this.setState({ videoEnabled: true });
     }
