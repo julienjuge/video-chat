@@ -32,16 +32,13 @@ io.on("connection", function(socket) {
     socket.room = data.roomId;
     const sockets = io.of("/").in().adapter.rooms[data.roomId];
 
-    console.log(sockets.length);
     nbSession = sockets.length;
     if (sockets.length === 1) {
-      console.log("init");
       socket.emit("init");
     } else {
       if (sockets.length < 5) {
         io.to(data.roomId).emit("ready", { username: username });
       } else {
-        console.log("full");
         socket.room = null;
         socket.leave(data.roomId);
         socket.emit("full");
@@ -50,6 +47,9 @@ io.on("connection", function(socket) {
   });
   socket.on("signal", data => {
     io.to(data.room).emit("desc", data);
+  });
+  socket.on("messageSignal", data => {
+    io.to(data.room).emit("messageReceived", data);
   });
   socket.on("disconnect", () => {
     const roomId = Object.keys(socket.adapter.rooms)[0];

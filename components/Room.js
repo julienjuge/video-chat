@@ -1,12 +1,23 @@
-import { Avatar, Button, Drawer, Row, Col, Spin } from "antd";
-
+import {
+  Input,
+  Avatar,
+  Button,
+  Drawer,
+  Row,
+  Col,
+  Spin,
+  Comment,
+  message,
+  Badge
+} from "antd";
+const { TextArea } = Input;
 import Participant from "./Participant";
 import React from "react";
-import { UserOutlined } from "@ant-design/icons";
+import { UserOutlined, SendOutlined, InboxOutlined } from "@ant-design/icons";
 import VideoCall from "../helpers/simple-peer";
 import create from "@ant-design/icons/lib/components/IconFont";
 import { getDisplayStream } from "../helpers/media-access";
-
+import moment from "moment";
 const io = require("socket.io-client");
 const socket = io(process.env.reactAppSignalingServer);
 
@@ -32,14 +43,18 @@ class Room extends React.Component {
       stream3: React.createRef(),
       stream4: React.createRef(),
       userList: [],
-      visible: false
+      visible: false,
+      messageList: [],
+      messageTextArea: "",
+      unreadMessage: 0
     };
   }
   videoCall = new VideoCall();
 
   showDrawer = () => {
     this.setState({
-      visible: true
+      visible: true,
+      unreadMessage: 0
     });
   };
 
@@ -61,8 +76,16 @@ class Room extends React.Component {
       component.setState({ initiator: true });
     });
     socket.on("ready", data => {
-      console.log(data.username);
       component.enter(roomId);
+    });
+    socket.on("messageReceived", data => {
+      let messageList = this.state.messageList;
+      messageList.push(data);
+      this.setState({ messageList: messageList });
+      if (data.user !== this.props.username) {
+        message.success(data.user + " send a new message");
+        this.setState({ unreadMessage: this.state.unreadMessage + 1 });
+      }
     });
     socket.on("desc", data => {
       const desc = data.desc;
@@ -123,6 +146,20 @@ class Room extends React.Component {
       this.state.peer.addStream(stream);
     });
   }
+
+  sendMessage = (e, message) => {
+    if (this.state.socket) {
+      const messageSignal = {
+        user: this.props.username,
+        room: this.props.roomId,
+        message: message,
+        date: Date.now()
+      };
+      this.state.socket.emit("messageSignal", messageSignal);
+      this.setState({ messageTextArea: "" });
+    }
+  };
+
   enter = roomId => {
     this.setState({ connecting: true });
     const peer = this.videoCall.init(
@@ -183,7 +220,6 @@ class Room extends React.Component {
   };
 
   setAudioEnabled = bool => {
-    console.log(bool);
     this.setState({ audioEnabled: bool });
   };
 
@@ -208,19 +244,71 @@ class Room extends React.Component {
   };
 
   buildParticipants = () => {
-    console.log("build");
     const { streams } = this.state;
     streams.map((stream, index) => {
-      console.log(stream);
-      console.log(this.state["stream" + index]);
       if (this.state[`stream${index}`].current !== null)
         this.state[`stream${index}`].current.srcObject = stream;
       else this.buildParticipants();
     });
   };
 
+  generateHeaderDrawer = () => {
+    return this.state.userList.map(user => (
+      <div key={user}>
+        <Avatar
+          style={{ backgroundColor: "#87d068" }}
+          icon={<UserOutlined />}
+        />
+        {" " + user}
+      </div>
+    ));
+  };
+
+  generateContentDrawer = () => {
+    return this.state.messageList.map(message => (
+      <Comment
+        key={message.date}
+        author={message.user}
+        avatar={
+          <Avatar
+            style={{ backgroundColor: "#87d068" }}
+            icon={<UserOutlined />}
+          />
+        }
+        content={<p>{message.message}</p>}
+        datetime={
+          <span>{moment(message.date).format("DD/MM/YYYY HH:mm:ss")}</span>
+        }
+      />
+    ));
+  };
+
+  generateFooterDrawer = () => {
+    return (
+      <div>
+        <Row>
+          <Col span={20}>
+            <TextArea
+              placeholder="Please enter a message"
+              value={this.state.messageTextArea}
+              onChange={e => this.setState({ messageTextArea: e.target.value })}
+            />
+          </Col>
+          <Col span={4}>
+            <Button
+              style={{ margin: "10px", marginLeft: "20px" }}
+              icon={<SendOutlined />}
+              shape="circle"
+              type="primary"
+              onClick={e => this.sendMessage(e, this.state.messageTextArea)}
+            />
+          </Col>
+        </Row>
+      </div>
+    );
+  };
+
   render() {
-    console.log(this.state.peerIds);
     const { username, roomId } = this.props;
     const {
       connecting,
@@ -228,7 +316,8 @@ class Room extends React.Component {
       localStream,
       audioEnabled,
       videoEnabled,
-      userList
+      userList,
+      unreadMessage
     } = this.state;
     return (
       <div className="room">
@@ -243,29 +332,33 @@ class Room extends React.Component {
           <Col span={8} />
           <Col span={3}>
             <div>
-              <Button
-                type="primary"
-                disabled={userList.length === 0}
-                onClick={this.showDrawer}
-              >
-                Connected users ({userList.length})
-              </Button>
+              {unreadMessage > 0 ? (
+                <Badge count={unreadMessage}>
+                  <InboxOutlined
+                    style={{ fontSize: "40px", color: "#1890ff" }}
+                    color="primary"
+                    disabled={userList.length === 0}
+                    onClick={this.showDrawer}
+                  />
+                </Badge>
+              ) : (
+                <InboxOutlined
+                  style={{ fontSize: "40px", color: "#1890ff" }}
+                  color="primary"
+                  disabled={userList.length === 0}
+                  onClick={this.showDrawer}
+                />
+              )}
+
               <Drawer
-                title={`Connected users (${userList.length})`}
-                width={200}
+                title={this.generateHeaderDrawer()}
+                width={450}
                 closable={false}
                 onClose={this.onClose}
                 visible={this.state.visible}
+                footer={this.generateFooterDrawer()}
               >
-                {userList.map(user => (
-                  <div>
-                    <Avatar
-                      style={{ backgroundColor: "#87d068" }}
-                      icon={<UserOutlined />}
-                    />
-                    {" " + user}
-                  </div>
-                ))}
+                {this.generateContentDrawer()}
               </Drawer>
             </div>
           </Col>
