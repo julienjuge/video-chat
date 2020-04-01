@@ -19,7 +19,7 @@ const handle = app.getRequestHandler();
 const PORT = process.env.PORT || 5000;
 const IS_CLEVER = process.env.IS_CLEVER;
 
-if (IS_CLEVER === true) {
+if (IS_CLEVER) {
   var enforce = require("express-sslify");
 }
 
@@ -67,7 +67,7 @@ app.prepare().then(() => {
 
   server.use(cors());
 
-  if (IS_CLEVER === true) {
+  if (IS_CLEVER) {
     server.use(enforce.HTTPS({ trustProtoHeader: true }));
     http.listen(PORT, "0.0.0.0", () => {
       console.log(`listening on port ${PORT}`);
