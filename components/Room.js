@@ -75,8 +75,6 @@ class Room extends React.Component {
         op,
         stream => {
           this.setState({ streamUrl: stream, localStream: stream });
-          console.log(stream);
-          this.localAudio.srcObject = stream;
           this.localVideo.srcObject = stream;
           resolve();
         },
