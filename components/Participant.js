@@ -18,7 +18,8 @@ const Participant = ({
   audioEnabled,
   disableVideo,
   enableVideo,
-  videoEnabled
+  videoEnabled,
+  toggleFullScreenParticipant
 }) => {
   const [videoTracks, setVideoTracks] = useState([]);
   const [audioTracks, setAudioTracks] = useState([]);

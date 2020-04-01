@@ -20,6 +20,36 @@ import moment from "moment";
 const io = require("socket.io-client");
 const socket = io(process.env.reactAppSignalingServer);
 
+const ShareScreenIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+  >
+    <path fill="none" d="M0 0h24v24H0V0z" />
+    <path
+      fill="greenyellow"
+      d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.11-.9-2-2-2H4c-1.11 0-2 .89-2 2v10c0 1.1.89 2 2 2H0v2h24v-2h-4zm-7-3.53v-2.19c-2.78 0-4.61.85-6 2.72.56-2.67 2.11-5.33 6-5.87V7l4 3.73-4 3.74z"
+    />
+  </svg>
+);
+
+const buttonStyle = {
+  position: "absolute",
+  bottom: "24px",
+  left: "24px",
+  background: "transparent",
+  outline: "none",
+  border: "none",
+  boxShadow: "1px 1px 8px black",
+  borderRadius: "50%",
+  backgroundColor: "#252839",
+  height: "64px",
+  width: "64px",
+  top: "auto"
+};
+
 class Room extends React.Component {
   constructor() {
     super();
@@ -42,6 +72,7 @@ class Room extends React.Component {
       stream3: React.createRef(),
       stream4: React.createRef(),
       userList: [],
+      remoteUserList: [],
       visible: false,
       messageList: [],
       messageTextArea: "",
@@ -83,18 +114,21 @@ class Room extends React.Component {
       this.setState({ messageList: messageList });
       if (data.user !== this.props.username) {
         message.success(data.user + " send a new message");
-        this.setState({ unreadMessage: this.state.unreadMessage + 1 });
+        if (!this.state.showDrawer)
+          this.setState({ unreadMessage: this.state.unreadMessage + 1 });
       }
     });
     socket.on("desc", data => {
       const desc = data.desc;
       let userList = this.state.userList;
+      let remoteUserList = this.state.remoteUserList;
       if (!userList.includes(data.user)) {
         let username = data.user;
         if (data.user === this.props.username) username = data.user + "(moi)";
+        else remoteUserList.push(data.user);
 
         userList.push(username);
-        this.setState({ userList: userList });
+        this.setState({ userList: userList, remoteUserList: remoteUserList });
       }
       if (desc.type === "offer" && component.state.initiator) return;
       if (desc.type === "answer" && !component.state.initiator) return;
@@ -126,6 +160,7 @@ class Room extends React.Component {
         stream => {
           this.setState({ streamUrl: stream, localStream: stream });
           this.localVideo.srcObject = stream;
+          this.localAudio.srcObject = stream;
           resolve();
         },
         () => {}
@@ -226,8 +261,11 @@ class Room extends React.Component {
     return (
       <Col span={6}>
         <Participant
+          index={index}
           key={index}
+          name={this.state.remoteUserList[index]}
           isLocal={false}
+          toggleFullScreenParticipant={this.toggleFullScreenParticipant}
           video={
             <div>
               <video
@@ -249,6 +287,12 @@ class Room extends React.Component {
         this.state[`stream${index}`].current.srcObject = stream;
       else this.buildParticipants();
     });
+  };
+
+  toggleFullScreenParticipant = index => {
+    const { streams } = this.state;
+    const currentStream = streams[index];
+    console.log(currentStream.getVideoTracks()[0].requestFullscreen);
   };
 
   generateHeaderDrawer = () => {
@@ -392,6 +436,11 @@ class Room extends React.Component {
                       autoPlay
                       id="localVideo"
                       ref={video => (this.localVideo = video)}
+                      muted={true}
+                    />
+                    <audio
+                      ref={audio => (this.localAudio = audio)}
+                      autoPlay={true}
                     />
                   </div>
                 }
@@ -406,6 +455,15 @@ class Room extends React.Component {
             )}
           </Col>
           <Col span={3} />
+        </Row>
+        <Row>
+          <Button
+            style={buttonStyle}
+            icon={<ShareScreenIcon />}
+            onClick={() => {
+              this.getDisplay();
+            }}
+          />
         </Row>
       </div>
     );
