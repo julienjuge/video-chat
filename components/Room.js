@@ -10,7 +10,6 @@ import {
   message,
   Badge
 } from "antd";
-const { TextArea } = Input;
 import Participant from "./Participant";
 import React from "react";
 import { UserOutlined, SendOutlined, InboxOutlined } from "@ant-design/icons";
@@ -288,15 +287,16 @@ class Room extends React.Component {
       <div>
         <Row>
           <Col span={20}>
-            <TextArea
+            <Input
               placeholder="Please enter a message"
               value={this.state.messageTextArea}
+              onPressEnter={e => this.sendMessage(e, e.target.value)}
               onChange={e => this.setState({ messageTextArea: e.target.value })}
             />
           </Col>
           <Col span={4}>
             <Button
-              style={{ margin: "10px", marginLeft: "20px" }}
+              style={{ marginLeft: "20px" }}
               icon={<SendOutlined />}
               shape="circle"
               type="primary"
