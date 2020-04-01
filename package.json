@@ -32,6 +32,7 @@
     "twilio": "^3.41.1"
   },
   "devDependencies": {
+    "express-sslify": "^1.2.0",
     "twilio-video": "^2.3.0"
   }
 }

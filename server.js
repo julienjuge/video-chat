@@ -18,6 +18,11 @@ const handle = app.getRequestHandler();
 
 const PORT = process.env.PORT || 5000;
 const IS_CLEVER = process.env.IS_CLEVER;
+
+if (IS_CLEVER === true) {
+  var enforce = require("express-sslify");
+}
+
 let nbSession = 0;
 
 io.on("connection", function(socket) {
@@ -56,12 +61,14 @@ app.prepare().then(() => {
   server.use(bodyParser.urlencoded({ extended: false }));
   server.use(bodyParser.json());
   server.use(video);
+
   // handling everything else with Next.js
   server.get("*", handle);
 
   server.use(cors());
 
-  if (IS_CLEVER) {
+  if (IS_CLEVER === true) {
+    server.use(enforce.HTTPS({ trustProtoHeader: true }));
     http.listen(PORT, "0.0.0.0", () => {
       console.log(`listening on port ${PORT}`);
     });
