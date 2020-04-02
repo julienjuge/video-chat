@@ -133,7 +133,7 @@ class Room extends React.Component {
       if (desc.type === "offer" && component.state.initiator) return;
       if (desc.type === "answer" && !component.state.initiator) return;
 
-      if (component.state.connecting) component.call(desc);
+      component.call(desc);
     });
     socket.on("disconnected", () => {
       component.setState({ initiator: true });
@@ -226,6 +226,8 @@ class Room extends React.Component {
     });
   };
   call = otherId => {
+    console.log(otherId);
+    //this.state.peerIds.map(peer => this.videoCall.connect(peer));
     this.videoCall.connect(otherId);
   };
   renderFull = () => {
