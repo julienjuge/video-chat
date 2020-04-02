@@ -76,8 +76,7 @@ class Room extends React.Component {
       visible: false,
       messageList: [],
       messageTextArea: "",
-      unreadMessage: 0,
-      remoteStream: {}
+      unreadMessage: 0
     };
   }
   videoCall = new VideoCall();
@@ -161,7 +160,6 @@ class Room extends React.Component {
         stream => {
           this.setState({ streamUrl: stream, localStream: stream });
           this.localVideo.srcObject = stream;
-
           resolve();
         },
         () => {}
@@ -217,12 +215,10 @@ class Room extends React.Component {
       if (this.state[`stream${newStreams.length}`].current !== null)
         this.state[`stream${newStreams.length}`].current.srcObject = stream;
       newStreams.push(stream);
-      this.remoteVideo.srcObject = stream;
       this.setState({
         connecting: false,
         waiting: false,
-        streams: newStreams,
-        remoteStream: stream
+        streams: newStreams
       });
     });
     peer.on("error", function(err) {
@@ -363,7 +359,6 @@ class Room extends React.Component {
       localStream,
       audioEnabled,
       videoEnabled,
-      remoteStream,
       userList,
       unreadMessage
     } = this.state;
@@ -414,25 +409,19 @@ class Room extends React.Component {
 
         <Row>
           <Col span={1} />
-          <Col span={6}>
-            {remoteStream !== undefined ? (
-              <Participant
-                video={
-                  <div>
-                    <video
-                      autoPlay
-                      id="remoteVideo"
-                      ref={video => (this.remoteVideo = video)}
-                    />
-                  </div>
-                }
-              />
-            ) : (
-              ""
-            )}
-          </Col>
+          {this.generateParticipant(0)}
           <Col span={1} />
+          {this.generateParticipant(1)}
+          <Col span={1} />
+          {this.generateParticipant(2)}
+          <Col span={3} />
+        </Row>
 
+        <Row>
+          <Col span={1} />
+          {this.generateParticipant(3)}
+          <Col span={1} />
+          {this.generateParticipant(4)}
           <Col span={1} />
           <Col span={6}>
             {localStream !== undefined ? (
